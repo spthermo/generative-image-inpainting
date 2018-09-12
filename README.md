@@ -47,7 +47,16 @@ Discriminator details:
 
 
 ## Training with CelebA
+To start training the generative image inpainting model use:
+```
+python main.py --dataPath /path/to/celebA
+```
 
+The ```logger.py``` file is used to create and update the model's instance for Tensorboard. To monitor the training process use:
+```
+tensorboard --logdir='./logs' --port 6006
+```
+and use your browser to access the localhost at the specified port.
 
 ## Testing on unseen data
 To be added
@@ -56,8 +65,9 @@ To be added
 ## Inpainting examples
 Some indicative CelebA samples in "real-masked-generated" triplet form:
 
-<img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/1_1.png" width="100"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/1_2.png" width="100"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/1_3.png" width="100">
-<img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/2_1.png" width="100"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/2_2.png" width="100"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/2_3.png" width="100">
+<img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/1_1.png" width="150"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/1_2.png" width="150"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/1_3.png" width="150">
+
+<img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/2_1.png" width="150"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/2_2.png" width="150"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/2_3.png" width="150">
 
 ## Acknowledgement
 The Tensorboard support is provided from [yunjey](https://github.com/yunjey/pytorch-tutorial/tree/master/tutorials/04-utils/tensorboard)
