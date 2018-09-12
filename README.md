@@ -12,6 +12,28 @@ The architecture has been implemented using the following:
 Tensorflow and Tensorboard are used for visualization and monitoring purposes, thus they are not mandatory.
 
 ## Model architecture details
+Generator details:
+
+|     Type     | Kernel | Dilation | Stride | Output |
+|:------------:|:------:|:--------:|:------:|:------:|
+|     conv     |  5x5   |    1     |  1x1   |   64   |
+|     conv     |  5x5   |    1     |  1x1   |   128  |
+|     conv     |  5x5   |    1     |  1x1   |   128  |
+|     conv     |  5x5   |    1     |  1x1   |   256  |
+|     conv     |  5x5   |    1     |  1x1   |   256  |
+|     conv     |  5x5   |    1     |  1x1   |   256  |
+| dilated conv |  5x5   |    2     |  1x1   |   256  |
+| dilated conv |  5x5   |    4     |  1x1   |   256  |
+| dilated conv |  5x5   |    8     |  1x1   |   256  |
+| dilated conv |  5x5   |   16     |  1x1   |   256  |
+|     conv     |  5x5   |    1     |  1x1   |   256  |
+|     conv     |  5x5   |    1     |  1x1   |   256  |
+|    deconv    |  5x5   |    1     |  1x1   |   128  |
+|     conv     |  5x5   |    1     |  1x1   |   128  |
+|    deconv    |  5x5   |    1     |  1x1   |   64   |
+|     conv     |  5x5   |    1     |  1x1   |   32   |
+|    output    |  5x5   |    1     |  1x1   |   3    |
+
 
 
 ## Training with CelebA
