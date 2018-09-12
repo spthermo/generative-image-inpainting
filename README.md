@@ -54,7 +54,10 @@ To be added
 
 
 ## Inpainting examples
+Some indicative CelebA samples in "real-masked-generated" triplet form:
 
+<img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/1_1.png" width="100"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/1_2.png" width="100"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/1_3.png" width="100">
+<img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/2_1.png" width="100"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/2_2.png" width="100"> <img src="https://github.com/spthermo/generative-image-inpainting/blob/master/examples/2_3.png" width="100">
 
 ## Acknowledgement
 The Tensorboard support is provided from [yunjey](https://github.com/yunjey/pytorch-tutorial/tree/master/tutorials/04-utils/tensorboard)
