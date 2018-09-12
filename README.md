@@ -17,23 +17,33 @@ Generator details:
 |     Type     | Kernel | Dilation | Stride | Output |
 |:------------:|:------:|:--------:|:------:|:------:|
 |     conv     |  5x5   |    1     |  1x1   |   64   |
-|     conv     |  5x5   |    1     |  1x1   |   128  |
-|     conv     |  5x5   |    1     |  1x1   |   128  |
-|     conv     |  5x5   |    1     |  1x1   |   256  |
-|     conv     |  5x5   |    1     |  1x1   |   256  |
-|     conv     |  5x5   |    1     |  1x1   |   256  |
-| dilated conv |  5x5   |    2     |  1x1   |   256  |
-| dilated conv |  5x5   |    4     |  1x1   |   256  |
-| dilated conv |  5x5   |    8     |  1x1   |   256  |
-| dilated conv |  5x5   |   16     |  1x1   |   256  |
-|     conv     |  5x5   |    1     |  1x1   |   256  |
-|     conv     |  5x5   |    1     |  1x1   |   256  |
-|    deconv    |  5x5   |    1     |  1x1   |   128  |
-|     conv     |  5x5   |    1     |  1x1   |   128  |
-|    deconv    |  5x5   |    1     |  1x1   |   64   |
-|     conv     |  5x5   |    1     |  1x1   |   32   |
-|    output    |  5x5   |    1     |  1x1   |   3    |
+|     conv     |  2x2   |    1     |  2x2   |   128  |
+|     conv     |  3x3   |    1     |  1x1   |   128  |
+|     conv     |  2x2   |    1     |  2x2   |   256  |
+|     conv     |  3x3   |    1     |  1x1   |   256  |
+|     conv     |  3x3   |    1     |  1x1   |   256  |
+| dilated conv |  3x3   |    2     |  1x1   |   256  |
+| dilated conv |  3x3   |    4     |  1x1   |   256  |
+| dilated conv |  3x3   |    8     |  1x1   |   256  |
+| dilated conv |  3x3   |   16     |  1x1   |   256  |
+|     conv     |  3x3   |    1     |  1x1   |   256  |
+|     conv     |  3x3   |    1     |  1x1   |   256  |
+|    deconv    |  4x4   |    1     |  2x2   |   128  |
+|     conv     |  3x3   |    1     |  1x1   |   128  |
+|    deconv    |  4x4   |    1     |  2x2   |   64   |
+|     conv     |  3x3   |    1     |  1x1   |   32   |
+|    output    |  3x3   |    1     |  1x1   |   3    |
 
+Discriminator details:
+
+|     Type     | Kernel | Dilation | Stride | Output |
+|:------------:|:------:|:--------:|:------:|:------:|
+|     conv     |  4x4   |    1     |  2x2   |   64   |
+|     conv     |  4x4   |    1     |  2x2   |   128  |
+|     conv     |  4x4   |    1     |  2x2   |   256  |
+|     conv     |  4x4   |    1     |  2x2   |   512  |
+|     conv     |  4x4   |    1     |  2x2   |   512  |
+|     conv     |  4x4   |    1     |  1x1   |    1   |
 
 
 ## Training with CelebA
