@@ -3,11 +3,11 @@ The presented deep NN architecture consists of a deep convolutional autoencoder 
 
 ## Prerequisites
 The architecture has been implemented using the following:
--Python 3.5
--Scipy
--Torchvision
--Tensorflow 1.7.0
--Tensorboard
+- Python 3.5
+- Scipy
+- Torchvision
+- Tensorflow 1.7.0
+- Tensorboard
 
 Tensorflow and Tensorboard are used for visualization and monitoring purposes, thus they are not mandatory.
 
@@ -50,6 +50,7 @@ Discriminator details:
 
 
 ## Testing on unseen data
+To be added
 
 
 ## Inpainting examples
