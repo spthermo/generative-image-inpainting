@@ -58,11 +58,13 @@ Local Discriminator details:
 
 ## Training with CelebA
 To start training the generative image inpainting model use:
+
 ```
-python main.py --dataPath /path/to/celebA
+python main.py --dataPath /path/to/celebA/train
 ```
 
 The ```logger.py``` file is used to create and update the model's instance for Tensorboard. To monitor the training process use:
+
 ```
 tensorboard --logdir='./logs' --port 6006
 ```
@@ -70,8 +72,19 @@ and use your browser to access the localhost at the specified port.
 
 
 ## Testing on unseen data
-To be added
+To test the model performance on unseen data of CelebA validation set use:
 
+```
+python inpaint.py --dataPath /path/to/celebA/val --netG /path/to/pretrained/generator/model
+```
+
+for example:
+
+```
+python inpaint.py --dataPath /datasets/celebA/val --netG /models/netG_e25.pth
+```
+
+the script selects a random batch of images (batchsize=64) from the CelebA validation set and saves 6 of them under "examples" directory.
 
 ## Inpainting examples
 Some indicative CelebA samples in "real-masked-generated" triplet form:
