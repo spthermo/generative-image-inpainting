@@ -1,5 +1,5 @@
 # Generative Image Inpainting
-The presented deep NN architecture consists of a deep convolutional autoencoder (generator) and a discriminator network with two parallel branches. The implementation is a based on the model proposed in [Globally and Locally Consistent Image Completion](http://hi.cs.waseda.ac.jp/~iizuka/projects/completion/data/completion_sig2017.pdf). Note that this is not an exact replication, as there are some layer-level modifications (e.g. no linear layers are utilized). The model is developed using PyTorch and is trained/tested on CelebA dataset.
+The presented deep NN architecture consists of a deep convolutional autoencoder (generator) and a discriminator network with two parallel branches. The implementation is a based on the model proposed in [Globally and Locally Consistent Image Completion](http://hi.cs.waseda.ac.jp/~iizuka/projects/completion/data/completion_sig2017.pdf). Note that this is not an exact replication, as there are some layer-level modifications (e.g. no linear layers are utilized). The model is developed using PyTorch and is trained/tested on [CelebA](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html) face dataset.
 
 ## Prerequisites
 The architecture has been implemented using the following:
