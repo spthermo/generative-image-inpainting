@@ -3,13 +3,16 @@ import argparse
 import os
 import random
 import time
+import math
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 import torch.utils.data
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
+from torch.autograd import Variable
 
 from logger import Logger
 
@@ -21,7 +24,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dataPath', default='', help='path to dataset')
 parser.add_argument('--workers', type=int, default=2, help='number of data loading workers')
 parser.add_argument('--cuda', default=1, action='store_true', help='enables cuda')
-parser.add_argument('--ngpu', type=int, default=1, help='number of gpus available')
 parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
 parser.add_argument('--imageSize', type=int, default=128, help='the height / width of the input image to network')
 parser.add_argument('--localSize', type=int, default=64, help='the height / width of the region around the mask')
@@ -30,6 +32,7 @@ parser.add_argument('--hole_max', type=int, default=48, help='max height / width
 parser.add_argument('--ndf', type=int, default=64)
 parser.add_argument('--niter', type=int, default=25, help='number of epochs')
 parser.add_argument('--lr', type=float, default=0.001)
+parser.add_argument('--alpha', type=float, default=0.01, help='the weight of discriminator loss')
 parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
 parser.add_argument('--beta2', type=float, default=0.99, help='beta2 for adam. default=0.99')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
@@ -46,7 +49,6 @@ torch.manual_seed(opt.manualSeed)
 cudnn.benchmark = True
 
 device = torch.device("cuda:0" if opt.cuda else "cpu")
-ngpu = int(opt.ngpu)
 ndf = int(opt.ndf)
 nc = 3
 
@@ -71,9 +73,8 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 class Generator(nn.Module):
-    def __init__(self, ngpu):
+    def __init__(self):
         super(Generator, self).__init__()
-        self.ngpu = ngpu
         self.main = nn.Sequential(
 
             nn.Conv2d(nc, ndf, 5, stride=1, padding=2, dilation=1, bias=True),
@@ -129,21 +130,17 @@ class Generator(nn.Module):
         )
 
     def forward(self, input):
-        if input.is_cuda and self.ngpu > 1:
-            output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
-        else:
-            output = self.main(input)
+        output = self.main(input)
 
         return output
 
   return output.view(-1, 1).squeeze(1)
 
 
-class Global_Discriminator(nn.Module):
-    def __init__(self, ngpu):
-        super(Global_Discriminator, self).__init__()
-        self.npgu = ngpu
-        self.main = nn.Sequential(
+class Discriminator(nn.Module):
+    def __init__(self):
+        super(Discriminator, self).__init__()
+        self.disc_d = nn.Sequential(
             nn.Conv2d(nc, ndf, 4, stride=2, padding=1, bias=True),
             nn.BatchNorm2d(ndf),
             nn.ReLU(True),
@@ -159,27 +156,57 @@ class Global_Discriminator(nn.Module):
             nn.Conv2d(ndf * 8, ndf * 8, 4, stride=2, padding=1, bias=True),
             nn.BatchNorm2d(ndf * 8),
             nn.ReLU(True),
-            nn.Conv2d(ndf * 8, 1, 4, stride=1, padding=0, bias=True),
+            nn.Conv2d(ndf * 8, ndf * 8, 4, stride=1, padding=0, bias=True),
+            nn.BatchNorm2d(ndf * 8),
+            nn.ReLU(True)
+        )
+
+        self.disc_l = nn.Sequential(
+            nn.Conv2d(nc, ndf * 2, 4, stride=2, padding=1, bias=True),
+            nn.BatchNorm2d(ndf * 2),
+            nn.ReLU(True),
+            nn.Conv2d(ndf * 2, ndf * 4, 4, stride=2, padding=1, bias=True),
+            nn.BatchNorm2d(ndf * 4),
+            nn.ReLU(True),
+            nn.Conv2d(ndf * 4, ndf * 8, 4, stride=2, padding=1, bias=True),
+            nn.BatchNorm2d(ndf * 8),
+            nn.ReLU(True),
+            nn.Conv2d(ndf * 8, ndf * 8, 4, stride=2, padding=1, bias=True),
+            nn.BatchNorm2d(ndf * 8),
+            nn.ReLU(True),
+            nn.Conv2d(ndf * 8, ndf * 8, 4, stride=1, padding=0, bias=True),
+            nn.BatchNorm2d(ndf * 8),
+            nn.ReLU(True)
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Conv2d(ndf * 16, 1, 1, stride=1, padding=0, bias=True),
             nn.Sigmoid()
         )
 
-    def forward(self, input):
-        if input.is_cuda and self.npgu > 1:
-            output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
-        else:
-            output = self.main(input)
+    def forward(self, x1, x2):
+        x_global = self.disc_d(x1)
+        x_local = self.disc_l(x2)
+        x = torch.cat((x_global, x_local), 1)
+        output = self.classifier(x)
 
         return output.view(-1, 1).squeeze(1)
 
 
 # weight initialization
-def weights_init(w):
-    layer = w.__class__.__name__
-    if layer.find('Conv') != -1:
-        w.weight.data.normal_(0.0, 0.02)
-    elif layer.find('BatchNorm') != -1:
-        w.weight.data.normal_(1.0, 0.02)
-        w.bias.data.fill_(0)
+def weights_init(m):
+    for m in m.modules():
+        if isinstance(m, nn.Conv2d):
+            n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+            m.weight.data.normal_(0, math.sqrt(2./n))
+            m.bias.data.zero_()
+        elif isinstance(m, nn.ConvTranspose2d):
+            n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+            m.weight.data.normal_(0, math.sqrt(2. / n))
+            m.bias.data.zero_()
+        elif isinstance(m, nn.BatchNorm2d):
+            m.weight.data.normal_(0, 1)
+            m.bias.data.zero_()
 
 # generate random masks
 def get_points():
@@ -202,13 +229,22 @@ def get_points():
 
     return np.array(points), np.array(mask)
 
+# crop image around the masked region
+def crop_local_patches(images, points, bsize):
+    cropped_images = torch.zeros([bsize, nc, opt.imageSize // 2, opt.imageSize // 2], dtype=torch.float32, device='cuda:0')
+    for i in range(bsize):
+        t = Variable(images[i])
+        cropped_images[i] = t[:, points[i][0]:points[i][2], points[i][1]:points[i][3]]
+
+    return cropped_images.cuda()
+
 # initialize Generator & Discriminator
-netG = Generator(ngpu).to(device)
-netG.apply(weights_init)
+netG = Generator().to(device)
+weights_init(netG)
 print(netG)
 
-netD = Global_Discriminator(ngpu).to(device)
-netD.apply(weights_init)
+netD = Discriminator().to(device)
+weights_init(netD)
 print(netD)
 
 # choose loss function
@@ -251,8 +287,11 @@ for epoch in range(opt.niter):
         netD.zero_grad()
         real_data = data[0].to(device)
         batch_size = real_data.size(0)
+
+	local_real_data = crop_local_patches(real_data, points_batch, batch_size)
         label = torch.full((batch_size,), real_label, device=device)
-        out = netD(real_data)
+
+        out = netD(real_data, local_real_data)
         errD_real = criterion(out, label)
         errD_real.backward()
 
@@ -266,18 +305,24 @@ for epoch in range(opt.niter):
             masked_data = real_data * (1 - masks)
 
         gen_data = netG(masked_data)
+
+	local_gen_data = crop_local_patches(gen_data, points_batch, batch_size)
         label.fill_(fake_label)
-        out = netD(gen_data.detach())
+
+        out = netD(gen_data.detach(), local_gen_data.detach())
         errD_fake = criterion(out, label)
         errD_fake.backward()
-        errD = errD_real + errD_fake
+        errD = (errD_real + errD_fake) * opt.alpha
         optD.step()
 
         # update Generator
         netG.zero_grad()
         label.fill_(real_label)
-        out = netD(gen_data)
-        errG = criterion2(gen_data, real_data)
+
+        out = netD(gen_data, local_gen_data)
+        errG_g = criterion2(gen_data, real_data)
+        errG_l = criterion2(local_gen_data, local_real_data)
+        errG = errG_g + errG_l
         errG.backward()
         optG.step()
 
@@ -316,6 +361,6 @@ for epoch in range(opt.niter):
         tag = tag.replace('.', '/')
         logger.histo_summary(tag, value.cpu().detach().numpy(), epoch)
 
-# save model parameters (last epoch)
-torch.save(netG.state_dict(), './models/netG_e%d.pth' % (epoch+1))
-torch.save(netD.state_dict(), './models/netD_e%d.pth' % (epoch+1))
+    # save model parameters per epoch
+    torch.save(netG.state_dict(), './models/netG_e%d.pth' % (epoch+1))
+    torch.save(netD.state_dict(), './models/netD_e%d.pth' % (epoch+1))
