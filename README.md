@@ -83,3 +83,6 @@ Some indicative CelebA samples in "real-masked-generated" triplet form:
 
 ## Acknowledgement
 The Tensorboard support is provided from [yunjey](https://github.com/yunjey/pytorch-tutorial/tree/master/tutorials/04-utils/tensorboard)
+
+### Similar projects:
+[GLCIC](https://github.com/tadax/glcic) is a similar approach developed with TensorFlow.
