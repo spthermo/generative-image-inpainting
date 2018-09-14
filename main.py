@@ -31,6 +31,7 @@ parser.add_argument('--hole_min', type=int, default=32, help='min height / width
 parser.add_argument('--hole_max', type=int, default=48, help='max height / width of the mask')
 parser.add_argument('--ndf', type=int, default=64)
 parser.add_argument('--niter', type=int, default=25, help='number of epochs')
+parser.add_argument('--preniter', type=int, default=50, help='number of epochs for generator pretraining')
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--alpha', type=float, default=0.01, help='the weight of discriminator loss')
 parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
@@ -238,6 +239,9 @@ def crop_local_patches(images, points, bsize):
 
     return cropped_images.cuda()
 
+def save_checkpoint(state, curr_epoch):
+    torch.save(state, './models/netG_e%d.pth.tar' % (curr_epoch))
+
 # initialize Generator & Discriminator
 netG = Generator().to(device)
 weights_init(netG)
@@ -282,20 +286,9 @@ for epoch in range(opt.niter):
 
         # generate masks
         points_batch, mask_batch = get_points()
-
-        # train Discriminator with real samples
-        netD.zero_grad()
         real_data = data[0].to(device)
         batch_size = real_data.size(0)
 
-	local_real_data = crop_local_patches(real_data, points_batch, batch_size)
-        label = torch.full((batch_size,), real_label, device=device)
-
-        out = netD(real_data, local_real_data)
-        errD_real = criterion(out, label)
-        errD_real.backward()
-
-        # train Discriminator with fake samples
         temp = torch.from_numpy(mask_batch)
         masks = temp.type(torch.FloatTensor).cuda()
         if real_data.size(0) < opt.batchSize:
@@ -304,33 +297,58 @@ for epoch in range(opt.niter):
         else:
             masked_data = real_data * (1 - masks)
 
-        gen_data = netG(masked_data)
+        if epoch <= opt.preniter:
+            netG.zero_grad()
+            gen_data = netG(masked_data)
+            errG = criterion2(gen_data, real_data)
+            errG.backward()
+            optG.step()
 
-	local_gen_data = crop_local_patches(gen_data, points_batch, batch_size)
-        label.fill_(fake_label)
+            print('PRETRAIN [%d/%d][%d/%d] Loss_G: %.4f'
+                  % (epoch, opt.niter, i, len(train_loader), errG.item()))
 
-        out = netD(gen_data.detach(), local_gen_data.detach())
-        errD_fake = criterion(out, label)
-        errD_fake.backward()
-        errD = (errD_real + errD_fake) * opt.alpha
-        optD.step()
+            errG_all.update(errG.item())
 
-        # update Generator
-        netG.zero_grad()
-        label.fill_(real_label)
+        else:
+            # train Discriminator with real samples
+            netD.zero_grad()
+            local_real_data = crop_local_patches(real_data, points_batch, batch_size)
+            label = torch.full((batch_size,), real_label, device=device)
+            out = netD(real_data, local_real_data)
+            errD_real = criterion(out, label)
+            errD_real.backward()
 
-        out = netD(gen_data, local_gen_data)
-        errG_g = criterion2(gen_data, real_data)
-        errG_l = criterion2(local_gen_data, local_real_data)
-        errG = errG_g + errG_l
-        errG.backward()
-        optG.step()
+            # train Discriminator with fake samples
+            temp = torch.from_numpy(mask_batch)
+            masks = temp.type(torch.FloatTensor).cuda()
+            if real_data.size(0) < opt.batchSize:
+                masks_narrowed = masks.narrow(0, 0, real_data.size(0))
+                masked_data = real_data * (1 - masks_narrowed)
+            else:
+                masked_data = real_data * (1 - masks)
 
-        print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f'
-              % (epoch, opt.niter, i, len(train_loader), errD.item(), errG.item()))
+            gen_data = netG(masked_data)
+            label.fill_(fake_label)
+            local_gen_data = crop_local_patches(gen_data, points_batch, batch_size)
+            out = netD(gen_data.detach(), local_gen_data.detach())
+            errD_fake = criterion(out, label)
+            errD_fake.backward()
+            errD = (errD_real + errD_fake) * opt.alpha
+            optD.step()
 
-        errD_all.update(errD.item())
-        errG_all.update(errG.item())
+            # update Generator
+            netG.zero_grad()
+            label.fill_(real_label)
+            out = netD(gen_data, local_gen_data)
+            errG = criterion2(gen_data, real_data)
+            errG.backward()
+            optG.step()
+
+            print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f'
+                % (epoch, opt.niter, i, len(train_loader), errD.item(), errG.item()))
+
+            errD_all.update(errD.item())
+            errG_all.update(errG.item())
 
         # TensorBoard logging
         # logging some indicative real/masked/generated images
@@ -361,6 +379,9 @@ for epoch in range(opt.niter):
         tag = tag.replace('.', '/')
         logger.histo_summary(tag, value.cpu().detach().numpy(), epoch)
 
-    # save model parameters per epoch
-    torch.save(netG.state_dict(), './models/netG_e%d.pth' % (epoch+1))
-    torch.save(netD.state_dict(), './models/netD_e%d.pth' % (epoch+1))
+    # save model parameters (last epoch)
+    save_checkpoint({
+        'epoch': epoch + 1,
+        'state_dict': netG.state_dict(),
+        'optimizer': optG.state_dict(),
+    }, epoch+1)

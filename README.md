@@ -57,7 +57,7 @@ Local Discriminator details:
 
 
 ## Training with CelebA
-To start training the generative image inpainting model use:
+The generator (completion netwrok) is initially trained for 25 epochs. After that, the whole model is trained for 100 epochs. To start training use the following:
 
 ```
 python main.py --dataPath /path/to/celebA/train
@@ -100,4 +100,4 @@ Some indicative CelebA samples in "real-masked-generated" triplet form:
 The Tensorboard support is provided from [yunjey](https://github.com/yunjey/pytorch-tutorial/tree/master/tutorials/04-utils/tensorboard)
 
 ### Similar projects:
-[GLCIC](https://github.com/tadax/glcic) is a similar approach developed with TensorFlow.
+[GLCIC](https://github.com/tadax/glcic) is a similar approach developed in TensorFlow.
