@@ -298,7 +298,7 @@ for epoch in range(opt.niter):
             masked_data = real_data * (1 - masks)
 
         if epoch <= opt.preniter:
-            netG.zero_grad()
+            optG.zero_grad()
             gen_data = netG(masked_data)
             errG = criterion2(gen_data, real_data)
             errG.backward()
@@ -310,13 +310,12 @@ for epoch in range(opt.niter):
             errG_all.update(errG.item())
 
         else:
+	    optD.zero_grad()
             # train Discriminator with real samples
-            netD.zero_grad()
             local_real_data = crop_local_patches(real_data, points_batch, batch_size)
             label = torch.full((batch_size,), real_label, device=device)
             out = netD(real_data, local_real_data)
             errD_real = criterion(out, label)
-            errD_real.backward()
 
             # train Discriminator with fake samples
             temp = torch.from_numpy(mask_batch)
@@ -328,17 +327,17 @@ for epoch in range(opt.niter):
                 masked_data = real_data * (1 - masks)
 
             gen_data = netG(masked_data)
-            label.fill_(fake_label)
+	    label_f = label.clone()
+            label_f.fill_(fake_label)
             local_gen_data = crop_local_patches(gen_data, points_batch, batch_size)
             out = netD(gen_data.detach(), local_gen_data.detach())
-            errD_fake = criterion(out, label)
-            errD_fake.backward()
+            errD_fake = criterion(out, label_f)
             errD = (errD_real + errD_fake) * opt.alpha
+	    errD.backward()
             optD.step()
 
             # update Generator
-            netG.zero_grad()
-            label.fill_(real_label)
+            optG.zero_grad()
             out = netD(gen_data, local_gen_data)
             errG = criterion2(gen_data, real_data)
             errG.backward()
