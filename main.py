@@ -135,8 +135,6 @@ class Generator(nn.Module):
 
         return output
 
-  return output.view(-1, 1).squeeze(1)
-
 
 class Discriminator(nn.Module):
     def __init__(self):
@@ -327,13 +325,13 @@ for epoch in range(opt.niter):
                 masked_data = real_data * (1 - masks)
 
             gen_data = netG(masked_data)
-	    label_f = label.clone()
+            label_f = label.clone()
             label_f.fill_(fake_label)
             local_gen_data = crop_local_patches(gen_data, points_batch, batch_size)
             out = netD(gen_data.detach(), local_gen_data.detach())
             errD_fake = criterion(out, label_f)
             errD = (errD_real + errD_fake) * opt.alpha
-	    errD.backward()
+            errD.backward()
             optD.step()
 
             # update Generator
